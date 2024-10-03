@@ -1,8 +1,10 @@
+const express = require('express');
 const multer = require('multer');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { GoogleAIFileManager } = require('@google/generative-ai/server');
 const FormData = require('form-data');
 const cors = require('cors');
+const app = express();
 const fs = require('fs');
 
 app.use(cors({ origin: true }));
