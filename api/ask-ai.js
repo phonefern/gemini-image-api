@@ -2,10 +2,15 @@ const multer = require('multer');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { GoogleAIFileManager } = require('@google/generative-ai/server');
 const FormData = require('form-data');
+const cors = require('cors');
 const fs = require('fs');
 
+app.use(cors({ origin: true }));
+app.use(express.json());
+
+
 // Initialize Google Generative AI
-const apiKey = process.env.GOOGLE_API_KEY; // Use environment variables
+const apiKey = 'AIzaSyAYinKiYLPNeCT5pqRQkpp5UDP_cO9pmYc';// Use environment variables
 const genAI = new GoogleGenerativeAI(apiKey);
 const fileManager = new GoogleAIFileManager(apiKey);
 
