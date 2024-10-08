@@ -1,18 +1,11 @@
-const express = require('express');
 const multer = require('multer');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { GoogleAIFileManager } = require('@google/generative-ai/server');
-const FormData = require('form-data');
-const cors = require('cors');
-const app = express();
 const fs = require('fs');
-
-app.use(cors({ origin: true }));
-app.use(express.json());
-
+const path = require('path');
 
 // Initialize Google Generative AI
-const apiKey = 'AIzaSyAYinKiYLPNeCT5pqRQkpp5UDP_cO9pmYc';// Use environment variables
+const apiKey ='AIzaSyAYinKiYLPNeCT5pqRQkpp5UDP_cO9pmYc'; // Use environment variables
 const genAI = new GoogleGenerativeAI(apiKey);
 const fileManager = new GoogleAIFileManager(apiKey);
 
@@ -36,6 +29,30 @@ const parseForm = (req) => {
 };
 
 module.exports = async (req, res) => {
+  // **CORS Handling Start**
+
+  // Allowed origins (update this with your frontend's actual origin in production)
+  const allowedOrigins = ['http://localhost:5173']; // Add your production frontend URL here
+
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else {
+    // Optionally, reject requests from disallowed origins
+    res.setHeader('Access-Control-Allow-Origin', 'null');
+  }
+
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Max-Age', '86400'); // Cache preflight response for 1 day
+
+  // Handle preflight OPTIONS request
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
+  // **CORS Handling End**
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -65,19 +82,23 @@ module.exports = async (req, res) => {
 
     let uploadedFile = null;
 
-    // If a file is provided, upload it to Gemini
     if (file) {
       const mimeType = file.mimetype;
-      // Save buffer to a temporary file
-      const tempPath = `/tmp/${file.originalname}`;
+      const tempPath = path.join('/tmp', file.originalname);
       fs.writeFileSync(tempPath, file.buffer);
+      
+      // Try to upload the file
       uploadedFile = await fileManager.uploadFile(tempPath, {
         mimeType,
         displayName: file.originalname,
       });
-      // Optionally delete the temp file
+      
+      // Log the file URI to check if it's valid
+      console.log("Uploaded File URI: ", uploadedFile.uri);
+      
       fs.unlinkSync(tempPath);
     }
+    
 
     const history = [
       {
@@ -96,11 +117,12 @@ module.exports = async (req, res) => {
           {
             fileData: {
               mimeType: uploadedFile.mimeType,
-              fileUri: uploadedFile.uri,
+              fileUri: uploadedFile.uri, 
             },
           }
         ]
       });
+      
     }
 
     const chatSession = selectedModel.startChat({
